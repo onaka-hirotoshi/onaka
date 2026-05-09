@@ -2,295 +2,307 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ポケモン図鑑 - ランダムフロー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>ポケモン名前あてクイズ</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  :root {
+    --primary: #1a2a6c;
+    --accent:  #fdbb2d;
+    --danger:  #e8504c;
+    --ok:      #2ecc71;
+  }
+
+  html, body { height: 100%; }
 
   body {
     font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
     background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
     background-size: 400% 400%;
-    animation: bgShift 20s ease infinite;
-    min-height: 100vh;
-    overflow-x: hidden;
+    animation: bgShift 25s ease infinite;
     color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px;
+    overflow-x: hidden;
   }
 
   @keyframes bgShift {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+    0%,100% { background-position: 0% 50%; }
+    50%     { background-position: 100% 50%; }
   }
 
   header {
     text-align: center;
-    padding: 24px 16px 8px;
-    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    margin-bottom: 12px;
+    text-shadow: 1px 2px 4px rgba(0,0,0,0.5);
   }
 
   header h1 {
-    font-size: clamp(28px, 5vw, 44px);
-    letter-spacing: 4px;
+    font-size: clamp(20px, 5vw, 32px);
+    letter-spacing: 2px;
   }
 
   header p {
-    margin-top: 6px;
+    font-size: 12px;
     opacity: 0.85;
-    font-size: 14px;
-  }
-
-  .controls {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    align-items: center;
-    margin: 12px 0 8px;
-    flex-wrap: wrap;
-  }
-
-  .controls button {
-    background: rgba(255,255,255,0.15);
-    border: 1px solid rgba(255,255,255,0.4);
-    color: #fff;
-    padding: 8px 18px;
-    border-radius: 999px;
-    cursor: pointer;
-    backdrop-filter: blur(6px);
-    font-size: 14px;
-    transition: transform 0.15s, background 0.2s;
-  }
-
-  .controls button:hover {
-    background: rgba(255,255,255,0.3);
-    transform: translateY(-2px);
-  }
-
-  /* 流れるレーン */
-  .lanes {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    padding: 18px 0;
-  }
-
-  .lane {
-    position: relative;
-    overflow: hidden;
-    height: 180px;
-  }
-
-  .track {
-    display: flex;
-    gap: 16px;
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
-    will-change: transform;
-    align-items: center;
-    padding: 0 12px;
-  }
-
-  .lane:nth-child(odd) .track  { animation: flowLeft  60s linear infinite; }
-  .lane:nth-child(even) .track { animation: flowRight 75s linear infinite; }
-
-  @keyframes flowLeft {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-  @keyframes flowRight {
-    from { transform: translateX(-50%); }
-    to   { transform: translateX(0); }
-  }
-
-  .lanes.paused .track { animation-play-state: paused; }
-
-  .card {
-    flex: 0 0 auto;
-    width: 160px;
-    height: 160px;
-    background: rgba(255,255,255,0.95);
-    color: #222;
-    border-radius: 16px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 8px;
-    position: relative;
-    cursor: pointer;
-    transition: transform 0.25s, box-shadow 0.25s;
-  }
-
-  .card:hover {
-    transform: scale(1.08) translateY(-4px);
-    box-shadow: 0 14px 32px rgba(0,0,0,0.5);
-    z-index: 5;
-  }
-
-  .card .id {
-    font-size: 11px;
-    color: #888;
-    align-self: flex-end;
-  }
-
-  .card img {
-    width: 86px;
-    height: 86px;
-    object-fit: contain;
-    image-rendering: pixelated;
-    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
-  }
-
-  .card .name {
-    font-weight: 700;
-    font-size: 14px;
-    margin-top: 2px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-  }
-
-  .card .types {
-    display: flex;
-    gap: 4px;
     margin-top: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
   }
 
-  .card .type {
-    font-size: 10px;
-    color: #fff;
-    padding: 2px 8px;
-    border-radius: 999px;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
-  }
-
-  .skeleton {
-    flex: 0 0 auto;
-    width: 160px;
-    height: 160px;
-    background: rgba(255,255,255,0.15);
-    border-radius: 16px;
-    animation: pulse 1.4s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%,100% { opacity: 0.4; }
-    50%     { opacity: 0.8; }
-  }
-
-  /* 詳細モーダル */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    backdrop-filter: blur(4px);
-  }
-
-  .modal-overlay.show { display: flex; }
-
-  .modal {
-    background: linear-gradient(160deg, #ffffff, #e8eef9);
-    color: #222;
-    width: min(420px, 92vw);
-    border-radius: 24px;
-    padding: 22px;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-    animation: pop 0.3s ease;
-  }
-
-  @keyframes pop {
-    from { transform: scale(0.7); opacity: 0; }
-    to   { transform: scale(1);   opacity: 1; }
-  }
-
-  .modal img {
-    width: 180px;
-    height: 180px;
-    object-fit: contain;
-    margin: 8px auto;
-  }
-
-  .modal h2 {
-    font-size: 24px;
-    margin: 4px 0;
-  }
-
-  .modal .id-big { color: #888; font-size: 14px; }
-
-  .modal .stats {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px 18px;
-    margin: 14px 4px;
-    text-align: left;
+  .stats-bar {
+    display: flex;
+    gap: 14px;
+    margin: 8px 0 14px;
     font-size: 13px;
   }
 
-  .modal .stat {
+  .stats-bar span b { color: var(--accent); font-size: 16px; margin: 0 2px; }
+
+  /* クイズカード */
+  .quiz {
+    width: 100%;
+    max-width: 420px;
+    background: rgba(255,255,255,0.97);
+    color: #222;
+    border-radius: 24px;
+    padding: 24px 20px 20px;
+    box-shadow: 0 14px 40px rgba(0,0,0,0.4);
     display: flex;
-    justify-content: space-between;
-    border-bottom: 1px dashed #ccc;
-    padding: 4px 0;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-height: 480px;
   }
 
-  .modal .types { justify-content: center; margin-top: 4px; }
-  .modal .type { font-size: 12px; padding: 4px 12px; }
+  .quiz.entering { animation: enter 0.5s ease both; }
+  .quiz.leaving  { animation: leave 0.3s ease both; }
 
-  .modal button.close {
-    margin-top: 14px;
-    padding: 8px 24px;
-    border: none;
-    background: #1a2a6c;
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(28px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes leave {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-28px) scale(0.96); }
+  }
+
+  .badge {
+    position: absolute;
+    top: -14px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--primary);
     color: #fff;
+    padding: 6px 18px;
     border-radius: 999px;
-    cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   }
 
-  .modal button.close:hover { background: #2a3a8c; }
+  .image-wrap {
+    width: 220px;
+    height: 220px;
+    max-width: 60vw;
+    max-height: 60vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 8px;
+    position: relative;
+  }
+
+  .image-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(3px 4px 6px rgba(0,0,0,0.25));
+    transition: filter 0.4s ease;
+  }
+
+  .question {
+    margin-top: 16px;
+    font-size: 13px;
+    color: #666;
+    letter-spacing: 1px;
+  }
+
+  .name {
+    margin-top: 6px;
+    font-size: clamp(28px, 8vw, 38px);
+    font-weight: 800;
+    letter-spacing: 3px;
+    color: var(--primary);
+    min-height: 1.2em;
+    text-align: center;
+    line-height: 1.2;
+    word-break: keep-all;
+  }
+
+  .name .blank {
+    display: inline-block;
+    color: var(--danger);
+    transition: color 0.3s ease;
+    font-size: 1.05em;
+  }
+
+  .name.revealed .blank {
+    color: var(--ok);
+    animation: pop 0.5s ease;
+  }
+
+  @keyframes pop {
+    0%   { transform: scale(0.5); }
+    60%  { transform: scale(1.4); }
+    100% { transform: scale(1); }
+  }
+
+  .types {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    min-height: 24px;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .types.shown { opacity: 1; }
+
+  .type {
+    color: #fff;
+    padding: 4px 12px;
+    font-size: 12px;
+    border-radius: 999px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    letter-spacing: 1px;
+  }
+
+  .meta {
+    margin-top: 10px;
+    font-size: 12px;
+    color: #777;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .meta.shown { opacity: 1; }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    width: 100%;
+  }
+
+  button.btn {
+    flex: 1;
+    padding: 14px 12px;
+    border: none;
+    border-radius: 999px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+    letter-spacing: 1px;
+  }
+
+  button.btn:active { transform: scale(0.97); }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-reveal { background: var(--accent); color: #222; box-shadow: 0 4px 12px rgba(253,187,45,0.5); }
+  .btn-next   { background: var(--primary); color: #fff; box-shadow: 0 4px 12px rgba(26,42,108,0.5); }
+
+  .loader {
+    position: absolute;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.7);
+    border-radius: 24px;
+    backdrop-filter: blur(2px);
+    z-index: 5;
+  }
+  .loader.show { display: flex; }
+  .pokeball {
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(to bottom, #ee1515 0 49%, #fff 49% 51%, #fff 51% 100%);
+    border: 4px solid #222;
+    position: relative;
+    animation: spin 1s linear infinite;
+  }
+  .pokeball::after {
+    content: "";
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    border: 4px solid #222;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* シルエット風 */
+  .silhouette img { filter: brightness(0) drop-shadow(3px 4px 6px rgba(0,0,0,0.25)); }
+  .quiz.revealed .silhouette img { filter: drop-shadow(3px 4px 6px rgba(0,0,0,0.25)); }
 
   footer {
+    margin-top: auto;
+    padding: 18px 8px 6px;
+    font-size: 11px;
+    opacity: 0.85;
     text-align: center;
-    padding: 16px 8px 24px;
-    font-size: 12px;
-    opacity: 0.8;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* SP最適化: 画面いっぱいに */
+  @media (max-width: 480px) {
+    body { padding: 12px 10px; justify-content: flex-start; }
+    .quiz { padding: 22px 16px 16px; min-height: auto; }
+    .image-wrap { width: 200px; height: 200px; }
+    .actions { flex-direction: column; }
+    .badge { font-size: 12px; padding: 5px 14px; }
   }
 
-  footer a { color: #fdbb2d; text-decoration: none; }
+  @media (min-height: 720px) and (max-width: 480px) {
+    body { justify-content: center; }
+  }
 </style>
 </head>
 <body>
   <header>
-    <h1>ポケモン図鑑</h1>
-    <p>ランダムに流れる Pokémon たちをクリックして詳細を見よう</p>
-    <div class="controls">
-      <button id="pauseBtn">一時停止</button>
-      <button id="reloadBtn">シャッフル</button>
+    <h1>ポケモン名前あてクイズ</h1>
+    <p>⚪︎に入る文字は何でしょう？</p>
+    <div class="stats-bar">
+      <span>第<b id="count">1</b>問</span>
+      <span>正解 <b id="correct">0</b></span>
     </div>
   </header>
 
-  <main class="lanes" id="lanes">
-    <div class="lane"><div class="track" id="lane1"></div></div>
-    <div class="lane"><div class="track" id="lane2"></div></div>
-    <div class="lane"><div class="track" id="lane3"></div></div>
-    <div class="lane"><div class="track" id="lane4"></div></div>
-  </main>
+  <section class="quiz" id="quiz">
+    <div class="badge" id="badge">第1問</div>
+    <div class="loader" id="loader"><div class="pokeball"></div></div>
 
-  <div class="modal-overlay" id="modalOverlay">
-    <div class="modal" id="modal"></div>
-  </div>
+    <div class="image-wrap silhouette" id="imageWrap">
+      <img id="pokemonImg" alt="">
+    </div>
+
+    <div class="question">⚪︎に入る文字は？</div>
+    <div class="name" id="nameEl"></div>
+
+    <div class="types" id="typesEl"></div>
+    <div class="meta" id="metaEl"></div>
+
+    <div class="actions">
+      <button class="btn btn-reveal" id="revealBtn">答えを見る</button>
+      <button class="btn btn-next" id="nextBtn">次のポケモン</button>
+    </div>
+  </section>
 
   <footer>
     Powered by <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokéAPI</a>
@@ -298,15 +310,13 @@
 
 <script>
   const TOTAL_POKEMON = 1025;
-  const PER_LANE = 14;
-  const LANES = 4;
 
   const TYPE_COLORS = {
-    normal: "#A8A77A", fire: "#EE8130", water: "#6390F0", electric: "#F7D02C",
-    grass: "#7AC74C", ice: "#96D9D6", fighting: "#C22E28", poison: "#A33EA1",
-    ground: "#E2BF65", flying: "#A98FF3", psychic: "#F95587", bug: "#A6B91A",
-    rock: "#B6A136", ghost: "#735797", dragon: "#6F35FC", dark: "#705746",
-    steel: "#B7B7CE", fairy: "#D685AD"
+    normal:"#A8A77A", fire:"#EE8130", water:"#6390F0", electric:"#F7D02C",
+    grass:"#7AC74C", ice:"#96D9D6", fighting:"#C22E28", poison:"#A33EA1",
+    ground:"#E2BF65", flying:"#A98FF3", psychic:"#F95587", bug:"#A6B91A",
+    rock:"#B6A136", ghost:"#735797", dragon:"#6F35FC", dark:"#705746",
+    steel:"#B7B7CE", fairy:"#D685AD"
   };
 
   const TYPE_JA = {
@@ -317,178 +327,184 @@
     steel:"はがね", fairy:"フェアリー"
   };
 
-  const STAT_JA = {
-    hp: "HP", attack: "こうげき", defense: "ぼうぎょ",
-    "special-attack": "とくこう", "special-defense": "とくぼう", speed: "すばやさ"
-  };
+  // 隠し対象から外す文字（小書きカナ・長音・記号）
+  const SKIP_CHARS = new Set(["ャ","ュ","ョ","ァ","ィ","ゥ","ェ","ォ","ッ","ー","・"," "]);
 
   const cache = new Map();
+  const state = {
+    questionNo: 0,
+    correct:    0,
+    current:    null,
+    revealed:   false,
+    loading:    false,
+  };
 
-  function pickRandomIds(n) {
-    const set = new Set();
-    while (set.size < n) {
-      set.add(Math.floor(Math.random() * TOTAL_POKEMON) + 1);
-    }
-    return [...set];
+  const $ = (id) => document.getElementById(id);
+
+  function pickRandomId() {
+    return Math.floor(Math.random() * TOTAL_POKEMON) + 1;
+  }
+
+  async function fetchJson(url) {
+    if (cache.has(url)) return cache.get(url);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("fetch failed: " + url);
+    const data = await res.json();
+    cache.set(url, data);
+    return data;
   }
 
   async function fetchPokemon(id) {
-    if (cache.has(id)) return cache.get(id);
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
-    if (!res.ok) throw new Error(`Failed: ${id}`);
-    const data = await res.json();
-    cache.set(id, data);
-    return data;
+    const [p, sp] = await Promise.all([
+      fetchJson(`https://pokeapi.co/api/v2/pokemon/${id}`),
+      fetchJson(`https://pokeapi.co/api/v2/pokemon-species/${id}`).catch(() => null),
+    ]);
+    const jaName = sp ? (
+      sp.names.find(n => n.language.name === "ja-Hrkt")?.name ||
+      sp.names.find(n => n.language.name === "ja")?.name
+    ) : null;
+    return {
+      id: p.id,
+      name: jaName || p.name,
+      enName: p.name,
+      img: p.sprites.other?.["official-artwork"]?.front_default || p.sprites.front_default,
+      types: p.types.map(t => t.type.name),
+      height: p.height / 10,
+      weight: p.weight / 10,
+    };
   }
 
-  async function fetchSpecies(id) {
-    const key = `species-${id}`;
-    if (cache.has(key)) return cache.get(key);
-    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
-    if (!res.ok) return null;
-    const data = await res.json();
-    cache.set(key, data);
-    return data;
+  function pickHiddenIndex(name) {
+    const candidates = [];
+    for (let i = 0; i < name.length; i++) {
+      if (!SKIP_CHARS.has(name[i])) candidates.push(i);
+    }
+    if (candidates.length === 0) {
+      // 全部スキップ対象なら諦めて0番目を選ぶ
+      return 0;
+    }
+    return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
-  function jaName(species) {
-    if (!species) return null;
-    const entry = species.names.find(n => n.language.name === "ja-Hrkt")
-               || species.names.find(n => n.language.name === "ja");
-    return entry ? entry.name : null;
+  function renderHiddenName(name, hiddenIdx, revealed) {
+    const span = document.createElement("span");
+    for (let i = 0; i < name.length; i++) {
+      if (i === hiddenIdx) {
+        const blank = document.createElement("span");
+        blank.className = "blank";
+        blank.textContent = revealed ? name[i] : "⚪︎";
+        span.appendChild(blank);
+      } else {
+        span.appendChild(document.createTextNode(name[i]));
+      }
+    }
+    return span;
   }
 
-  function pokemonImg(p) {
-    return p.sprites.other?.["official-artwork"]?.front_default
-        || p.sprites.front_default
-        || "";
-  }
+  async function loadNext() {
+    if (state.loading) return;
+    state.loading = true;
+    state.revealed = false;
 
-  function makeCard(p, jaLabel) {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.dataset.id = p.id;
+    const quiz = $("quiz");
+    const wasFirst = state.questionNo === 0;
 
-    const id = document.createElement("span");
-    id.className = "id";
-    id.textContent = `No.${String(p.id).padStart(4, "0")}`;
+    if (!wasFirst) {
+      quiz.classList.remove("entering");
+      quiz.classList.add("leaving");
+      await new Promise(r => setTimeout(r, 300));
+    }
 
-    const img = document.createElement("img");
-    img.loading = "lazy";
-    img.src = pokemonImg(p);
+    $("loader").classList.add("show");
+
+    let p;
+    try {
+      p = await fetchPokemon(pickRandomId());
+    } catch (e) {
+      $("loader").classList.remove("show");
+      state.loading = false;
+      return;
+    }
+
+    state.current = p;
+    state.current.hiddenIdx = pickHiddenIndex(p.name);
+    state.questionNo++;
+
+    // UI更新
+    $("count").textContent = state.questionNo;
+    $("badge").textContent = `第${state.questionNo}問`;
+
+    const img = $("pokemonImg");
+    img.src = p.img || "";
     img.alt = p.name;
 
-    const name = document.createElement("div");
-    name.className = "name";
-    name.textContent = jaLabel || p.name;
+    $("imageWrap").classList.add("silhouette");
+    quiz.classList.remove("revealed");
 
-    const types = document.createElement("div");
-    types.className = "types";
-    p.types.forEach(t => {
-      const tag = document.createElement("span");
-      tag.className = "type";
-      tag.style.background = TYPE_COLORS[t.type.name] || "#888";
-      tag.textContent = TYPE_JA[t.type.name] || t.type.name;
-      types.appendChild(tag);
-    });
+    const nameEl = $("nameEl");
+    nameEl.classList.remove("revealed");
+    nameEl.replaceChildren(renderHiddenName(p.name, p.hiddenIdx, false));
 
-    card.append(id, img, name, types);
-    card.addEventListener("click", () => openModal(p, jaLabel));
-    return card;
-  }
-
-  function makeSkeleton() {
-    const s = document.createElement("div");
-    s.className = "skeleton";
-    return s;
-  }
-
-  async function loadLane(laneEl, ids) {
-    laneEl.innerHTML = "";
-    const skeletons = ids.map(() => {
-      const s = makeSkeleton();
-      laneEl.appendChild(s);
-      return s;
-    });
-
-    const cards = await Promise.all(ids.map(async (id, idx) => {
-      try {
-        const [p, sp] = await Promise.all([fetchPokemon(id), fetchSpecies(id)]);
-        const card = makeCard(p, jaName(sp));
-        skeletons[idx].replaceWith(card);
-        return card;
-      } catch (e) {
-        skeletons[idx].remove();
-        return null;
-      }
+    const typesEl = $("typesEl");
+    typesEl.classList.remove("shown");
+    typesEl.replaceChildren(...p.types.map(t => {
+      const e = document.createElement("span");
+      e.className = "type";
+      e.style.background = TYPE_COLORS[t] || "#888";
+      e.textContent = TYPE_JA[t] || t;
+      return e;
     }));
 
-    // ループのために2倍に複製
-    cards.filter(Boolean).forEach(c => {
-      laneEl.appendChild(c.cloneNode(true));
-    });
-    // 複製したカードにもクリックイベントを付与
-    laneEl.querySelectorAll(".card").forEach(card => {
-      if (card.dataset.bound) return;
-      card.dataset.bound = "1";
-      card.addEventListener("click", async () => {
-        const id = Number(card.dataset.id);
-        const [p, sp] = await Promise.all([fetchPokemon(id), fetchSpecies(id)]);
-        openModal(p, jaName(sp));
-      });
-    });
+    const metaEl = $("metaEl");
+    metaEl.classList.remove("shown");
+    metaEl.textContent = `No.${String(p.id).padStart(4,"0")}　高さ ${p.height} m / 重さ ${p.weight} kg`;
+
+    $("revealBtn").disabled = false;
+    $("revealBtn").textContent = "答えを見る";
+
+    $("loader").classList.remove("show");
+
+    quiz.classList.remove("leaving");
+    quiz.classList.add("entering");
+
+    state.loading = false;
   }
 
-  async function loadAll() {
-    const lanes = [
-      document.getElementById("lane1"),
-      document.getElementById("lane2"),
-      document.getElementById("lane3"),
-      document.getElementById("lane4"),
-    ];
-    await Promise.all(lanes.map(lane => loadLane(lane, pickRandomIds(PER_LANE))));
+  function reveal() {
+    if (!state.current || state.revealed) return;
+    state.revealed = true;
+    state.correct++;
+    $("correct").textContent = state.correct;
+
+    const p = state.current;
+    const nameEl = $("nameEl");
+    nameEl.classList.add("revealed");
+    nameEl.replaceChildren(renderHiddenName(p.name, p.hiddenIdx, true));
+
+    $("imageWrap").classList.remove("silhouette");
+    $("quiz").classList.add("revealed");
+    $("typesEl").classList.add("shown");
+    $("metaEl").classList.add("shown");
+
+    $("revealBtn").disabled = true;
+    $("revealBtn").textContent = "正解 ✓";
   }
 
-  function openModal(p, jaLabel) {
-    const overlay = document.getElementById("modalOverlay");
-    const modal = document.getElementById("modal");
-    const typesHtml = p.types.map(t =>
-      `<span class="type" style="background:${TYPE_COLORS[t.type.name] || "#888"};color:#fff;">
-        ${TYPE_JA[t.type.name] || t.type.name}
-      </span>`).join("");
+  $("revealBtn").addEventListener("click", reveal);
+  $("nextBtn").addEventListener("click", loadNext);
 
-    const statsHtml = p.stats.map(s =>
-      `<div class="stat"><span>${STAT_JA[s.stat.name] || s.stat.name}</span><span>${s.base_stat}</span></div>`
-    ).join("");
-
-    modal.innerHTML = `
-      <div class="id-big">No.${String(p.id).padStart(4, "0")}</div>
-      <h2>${jaLabel || p.name}</h2>
-      <img src="${pokemonImg(p)}" alt="${p.name}">
-      <div class="types">${typesHtml}</div>
-      <div class="stats">${statsHtml}</div>
-      <div style="font-size:13px;color:#555;">
-        高さ ${p.height / 10} m / 重さ ${p.weight / 10} kg
-      </div>
-      <button class="close" id="closeBtn">とじる</button>
-    `;
-    overlay.classList.add("show");
-    document.getElementById("closeBtn").onclick = () => overlay.classList.remove("show");
-  }
-
-  document.getElementById("modalOverlay").addEventListener("click", (e) => {
-    if (e.target.id === "modalOverlay") e.currentTarget.classList.remove("show");
+  // キーボードショートカット (PC向け)
+  document.addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "Enter") {
+      e.preventDefault();
+      if (!state.revealed) reveal();
+      else loadNext();
+    } else if (e.key === "ArrowRight") {
+      loadNext();
+    }
   });
 
-  const lanesEl = document.getElementById("lanes");
-  document.getElementById("pauseBtn").addEventListener("click", (e) => {
-    lanesEl.classList.toggle("paused");
-    e.currentTarget.textContent = lanesEl.classList.contains("paused") ? "再生" : "一時停止";
-  });
-
-  document.getElementById("reloadBtn").addEventListener("click", () => loadAll());
-
-  loadAll();
+  loadNext();
 </script>
 </body>
 </html>
