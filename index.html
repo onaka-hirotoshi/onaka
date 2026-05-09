@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ポケモン図鑑 - ランダムフロー</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+    background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+    background-size: 400% 400%;
+    animation: bgShift 20s ease infinite;
+    min-height: 100vh;
+    overflow-x: hidden;
+    color: #fff;
+  }
+
+  @keyframes bgShift {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
+  header {
+    text-align: center;
+    padding: 24px 16px 8px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+  }
+
+  header h1 {
+    font-size: clamp(28px, 5vw, 44px);
+    letter-spacing: 4px;
+  }
+
+  header p {
+    margin-top: 6px;
+    opacity: 0.85;
+    font-size: 14px;
+  }
+
+  .controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin: 12px 0 8px;
+    flex-wrap: wrap;
+  }
+
+  .controls button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 999px;
+    cursor: pointer;
+    backdrop-filter: blur(6px);
+    font-size: 14px;
+    transition: transform 0.15s, background 0.2s;
+  }
+
+  .controls button:hover {
+    background: rgba(255,255,255,0.3);
+    transform: translateY(-2px);
+  }
+
+  /* 流れるレーン */
+  .lanes {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 0;
+  }
+
+  .lane {
+    position: relative;
+    overflow: hidden;
+    height: 180px;
+  }
+
+  .track {
+    display: flex;
+    gap: 16px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    will-change: transform;
+    align-items: center;
+    padding: 0 12px;
+  }
+
+  .lane:nth-child(odd) .track  { animation: flowLeft  60s linear infinite; }
+  .lane:nth-child(even) .track { animation: flowRight 75s linear infinite; }
+
+  @keyframes flowLeft {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes flowRight {
+    from { transform: translateX(-50%); }
+    to   { transform: translateX(0); }
+  }
+
+  .lanes.paused .track { animation-play-state: paused; }
+
+  .card {
+    flex: 0 0 auto;
+    width: 160px;
+    height: 160px;
+    background: rgba(255,255,255,0.95);
+    color: #222;
+    border-radius: 16px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.25s, box-shadow 0.25s;
+  }
+
+  .card:hover {
+    transform: scale(1.08) translateY(-4px);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.5);
+    z-index: 5;
+  }
+
+  .card .id {
+    font-size: 11px;
+    color: #888;
+    align-self: flex-end;
+  }
+
+  .card img {
+    width: 86px;
+    height: 86px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.2));
+  }
+
+  .card .name {
+    font-weight: 700;
+    font-size: 14px;
+    margin-top: 2px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  .card .types {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .card .type {
+    font-size: 10px;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 999px;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+  }
+
+  .skeleton {
+    flex: 0 0 auto;
+    width: 160px;
+    height: 160px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 16px;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%,100% { opacity: 0.4; }
+    50%     { opacity: 0.8; }
+  }
+
+  /* 詳細モーダル */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.show { display: flex; }
+
+  .modal {
+    background: linear-gradient(160deg, #ffffff, #e8eef9);
+    color: #222;
+    width: min(420px, 92vw);
+    border-radius: 24px;
+    padding: 22px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: pop 0.3s ease;
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.7); opacity: 0; }
+    to   { transform: scale(1);   opacity: 1; }
+  }
+
+  .modal img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+    margin: 8px auto;
+  }
+
+  .modal h2 {
+    font-size: 24px;
+    margin: 4px 0;
+  }
+
+  .modal .id-big { color: #888; font-size: 14px; }
+
+  .modal .stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 18px;
+    margin: 14px 4px;
+    text-align: left;
+    font-size: 13px;
+  }
+
+  .modal .stat {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px dashed #ccc;
+    padding: 4px 0;
+  }
+
+  .modal .types { justify-content: center; margin-top: 4px; }
+  .modal .type { font-size: 12px; padding: 4px 12px; }
+
+  .modal button.close {
+    margin-top: 14px;
+    padding: 8px 24px;
+    border: none;
+    background: #1a2a6c;
+    color: #fff;
+    border-radius: 999px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+
+  .modal button.close:hover { background: #2a3a8c; }
+
+  footer {
+    text-align: center;
+    padding: 16px 8px 24px;
+    font-size: 12px;
+    opacity: 0.8;
+  }
+
+  footer a { color: #fdbb2d; text-decoration: none; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>ポケモン図鑑</h1>
+    <p>ランダムに流れる Pokémon たちをクリックして詳細を見よう</p>
+    <div class="controls">
+      <button id="pauseBtn">一時停止</button>
+      <button id="reloadBtn">シャッフル</button>
+    </div>
+  </header>
+
+  <main class="lanes" id="lanes">
+    <div class="lane"><div class="track" id="lane1"></div></div>
+    <div class="lane"><div class="track" id="lane2"></div></div>
+    <div class="lane"><div class="track" id="lane3"></div></div>
+    <div class="lane"><div class="track" id="lane4"></div></div>
+  </main>
+
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal"></div>
+  </div>
+
+  <footer>
+    Powered by <a href="https://pokeapi.co/" target="_blank" rel="noopener">PokéAPI</a>
+  </footer>
+
+<script>
+  const TOTAL_POKEMON = 1025;
+  const PER_LANE = 14;
+  const LANES = 4;
+
+  const TYPE_COLORS = {
+    normal: "#A8A77A", fire: "#EE8130", water: "#6390F0", electric: "#F7D02C",
+    grass: "#7AC74C", ice: "#96D9D6", fighting: "#C22E28", poison: "#A33EA1",
+    ground: "#E2BF65", flying: "#A98FF3", psychic: "#F95587", bug: "#A6B91A",
+    rock: "#B6A136", ghost: "#735797", dragon: "#6F35FC", dark: "#705746",
+    steel: "#B7B7CE", fairy: "#D685AD"
+  };
+
+  const TYPE_JA = {
+    normal:"ノーマル", fire:"ほのお", water:"みず", electric:"でんき",
+    grass:"くさ", ice:"こおり", fighting:"かくとう", poison:"どく",
+    ground:"じめん", flying:"ひこう", psychic:"エスパー", bug:"むし",
+    rock:"いわ", ghost:"ゴースト", dragon:"ドラゴン", dark:"あく",
+    steel:"はがね", fairy:"フェアリー"
+  };
+
+  const STAT_JA = {
+    hp: "HP", attack: "こうげき", defense: "ぼうぎょ",
+    "special-attack": "とくこう", "special-defense": "とくぼう", speed: "すばやさ"
+  };
+
+  const cache = new Map();
+
+  function pickRandomIds(n) {
+    const set = new Set();
+    while (set.size < n) {
+      set.add(Math.floor(Math.random() * TOTAL_POKEMON) + 1);
+    }
+    return [...set];
+  }
+
+  async function fetchPokemon(id) {
+    if (cache.has(id)) return cache.get(id);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${id}`);
+    if (!res.ok) throw new Error(`Failed: ${id}`);
+    const data = await res.json();
+    cache.set(id, data);
+    return data;
+  }
+
+  async function fetchSpecies(id) {
+    const key = `species-${id}`;
+    if (cache.has(key)) return cache.get(key);
+    const res = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${id}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    cache.set(key, data);
+    return data;
+  }
+
+  function jaName(species) {
+    if (!species) return null;
+    const entry = species.names.find(n => n.language.name === "ja-Hrkt")
+               || species.names.find(n => n.language.name === "ja");
+    return entry ? entry.name : null;
+  }
+
+  function pokemonImg(p) {
+    return p.sprites.other?.["official-artwork"]?.front_default
+        || p.sprites.front_default
+        || "";
+  }
+
+  function makeCard(p, jaLabel) {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.dataset.id = p.id;
+
+    const id = document.createElement("span");
+    id.className = "id";
+    id.textContent = `No.${String(p.id).padStart(4, "0")}`;
+
+    const img = document.createElement("img");
+    img.loading = "lazy";
+    img.src = pokemonImg(p);
+    img.alt = p.name;
+
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = jaLabel || p.name;
+
+    const types = document.createElement("div");
+    types.className = "types";
+    p.types.forEach(t => {
+      const tag = document.createElement("span");
+      tag.className = "type";
+      tag.style.background = TYPE_COLORS[t.type.name] || "#888";
+      tag.textContent = TYPE_JA[t.type.name] || t.type.name;
+      types.appendChild(tag);
+    });
+
+    card.append(id, img, name, types);
+    card.addEventListener("click", () => openModal(p, jaLabel));
+    return card;
+  }
+
+  function makeSkeleton() {
+    const s = document.createElement("div");
+    s.className = "skeleton";
+    return s;
+  }
+
+  async function loadLane(laneEl, ids) {
+    laneEl.innerHTML = "";
+    const skeletons = ids.map(() => {
+      const s = makeSkeleton();
+      laneEl.appendChild(s);
+      return s;
+    });
+
+    const cards = await Promise.all(ids.map(async (id, idx) => {
+      try {
+        const [p, sp] = await Promise.all([fetchPokemon(id), fetchSpecies(id)]);
+        const card = makeCard(p, jaName(sp));
+        skeletons[idx].replaceWith(card);
+        return card;
+      } catch (e) {
+        skeletons[idx].remove();
+        return null;
+      }
+    }));
+
+    // ループのために2倍に複製
+    cards.filter(Boolean).forEach(c => {
+      laneEl.appendChild(c.cloneNode(true));
+    });
+    // 複製したカードにもクリックイベントを付与
+    laneEl.querySelectorAll(".card").forEach(card => {
+      if (card.dataset.bound) return;
+      card.dataset.bound = "1";
+      card.addEventListener("click", async () => {
+        const id = Number(card.dataset.id);
+        const [p, sp] = await Promise.all([fetchPokemon(id), fetchSpecies(id)]);
+        openModal(p, jaName(sp));
+      });
+    });
+  }
+
+  async function loadAll() {
+    const lanes = [
+      document.getElementById("lane1"),
+      document.getElementById("lane2"),
+      document.getElementById("lane3"),
+      document.getElementById("lane4"),
+    ];
+    await Promise.all(lanes.map(lane => loadLane(lane, pickRandomIds(PER_LANE))));
+  }
+
+  function openModal(p, jaLabel) {
+    const overlay = document.getElementById("modalOverlay");
+    const modal = document.getElementById("modal");
+    const typesHtml = p.types.map(t =>
+      `<span class="type" style="background:${TYPE_COLORS[t.type.name] || "#888"};color:#fff;">
+        ${TYPE_JA[t.type.name] || t.type.name}
+      </span>`).join("");
+
+    const statsHtml = p.stats.map(s =>
+      `<div class="stat"><span>${STAT_JA[s.stat.name] || s.stat.name}</span><span>${s.base_stat}</span></div>`
+    ).join("");
+
+    modal.innerHTML = `
+      <div class="id-big">No.${String(p.id).padStart(4, "0")}</div>
+      <h2>${jaLabel || p.name}</h2>
+      <img src="${pokemonImg(p)}" alt="${p.name}">
+      <div class="types">${typesHtml}</div>
+      <div class="stats">${statsHtml}</div>
+      <div style="font-size:13px;color:#555;">
+        高さ ${p.height / 10} m / 重さ ${p.weight / 10} kg
+      </div>
+      <button class="close" id="closeBtn">とじる</button>
+    `;
+    overlay.classList.add("show");
+    document.getElementById("closeBtn").onclick = () => overlay.classList.remove("show");
+  }
+
+  document.getElementById("modalOverlay").addEventListener("click", (e) => {
+    if (e.target.id === "modalOverlay") e.currentTarget.classList.remove("show");
+  });
+
+  const lanesEl = document.getElementById("lanes");
+  document.getElementById("pauseBtn").addEventListener("click", (e) => {
+    lanesEl.classList.toggle("paused");
+    e.currentTarget.textContent = lanesEl.classList.contains("paused") ? "再生" : "一時停止";
+  });
+
+  document.getElementById("reloadBtn").addEventListener("click", () => loadAll());
+
+  loadAll();
+</script>
+</body>
+</html>
