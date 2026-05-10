@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>onaka — シンプルつぶやき</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <main id="app">
+    <header class="topbar">
+      <h1>onaka</h1>
+      <div id="userArea" class="user-area" hidden>
+        <span id="userLabel"></span>
+        <button id="signOutBtn" class="btn btn-ghost">ログアウト</button>
+      </div>
+    </header>
+
+    <section id="authView" class="card" hidden>
+      <h2 id="authTitle">ログイン</h2>
+      <form id="authForm" class="form">
+        <label>
+          メールアドレス
+          <input type="email" id="email" required autocomplete="email" />
+        </label>
+        <label>
+          パスワード（6文字以上）
+          <input type="password" id="password" required minlength="6" autocomplete="current-password" />
+        </label>
+        <button type="submit" id="authSubmit" class="btn btn-primary">ログイン</button>
+      </form>
+      <p class="auth-toggle">
+        <span id="authToggleText">アカウントをお持ちでないですか？</span>
+        <a href="#" id="authToggleLink">新規登録</a>
+      </p>
+      <p id="authMessage" class="msg" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="feedView" hidden>
+      <form id="postForm" class="card post-form">
+        <textarea
+          id="postContent"
+          placeholder="いま何してる？"
+          maxlength="280"
+          rows="3"
+          required
+        ></textarea>
+        <div class="post-row">
+          <span id="charCount" class="char-count">0 / 280</span>
+          <button type="submit" id="postSubmit" class="btn btn-primary">つぶやく</button>
+        </div>
+        <p id="postMessage" class="msg" role="status" aria-live="polite"></p>
+      </form>
+
+      <ul id="feed" class="feed" aria-live="polite"></ul>
+      <p id="feedEmpty" class="empty" hidden>まだつぶやきがありません。</p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

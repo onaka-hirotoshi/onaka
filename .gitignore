@@ -1,0 +1,16 @@
+# 環境変数 / シークレット類
+.env
+.env.*
+!.env.example
+
+# Supabase 設定（実際のキーが入るファイル）
+twitter/config.js
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 依存
+node_modules/
